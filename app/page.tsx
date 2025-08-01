@@ -1,5 +1,6 @@
 import { EnvVarWarning } from "@/components/env-var-warning";
 import { AuthButton } from "@/components/auth-button";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { MessageCircle, Users, Zap, Shield } from "lucide-react";
@@ -14,7 +15,10 @@ export default function Home() {
             <MessageCircle className="h-8 w-8 text-green-600" />
             <span>WhatsApp Web</span>
           </div>
-          {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
+            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+          </div>
         </div>
       </nav>
 

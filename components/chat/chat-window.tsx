@@ -269,18 +269,48 @@ export function ChatWindow({
 
   const downloadMedia = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
+      // For S3 pre-signed URLs, we can download directly
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+      }
+
       const blob = await response.blob();
+      
+      // Create download link
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = filename;
+      link.download = filename || 'download';
+      link.style.display = 'none';
+      
+      // Trigger download
       document.body.appendChild(link);
       link.click();
+      
+      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('File downloaded successfully:', filename);
     } catch (error) {
       console.error('Error downloading media:', error);
+      
+      // Fallback: Open in new tab if direct download fails
+      try {
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+          throw new Error('Popup blocked');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback download also failed:', fallbackError);
+        alert('Unable to download file. Please try again or contact support.');
+      }
     }
   };
 

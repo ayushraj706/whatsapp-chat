@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Search, MessageCircle, LogOut } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -57,13 +58,18 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId }: U
             <MessageCircle className="h-6 w-6" />
             <h1 className="text-lg font-semibold">WhatsApp</h1>
           </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 hover:bg-green-700 rounded-full transition-colors"
-            title="Logout"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="[&>button]:text-white [&>button]:hover:bg-green-700">
+              <ThemeSwitcher />
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-green-700 rounded-full transition-colors"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -126,4 +132,4 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId }: U
       </div>
     </div>
   );
-} 
+}

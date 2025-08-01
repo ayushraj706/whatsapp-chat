@@ -1,13 +1,21 @@
-import AWS from 'aws-sdk';
+import { 
+  S3Client, 
+  PutObjectCommand, 
+  GetObjectCommand, 
+  HeadObjectCommand, 
+  DeleteObjectCommand 
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Configure AWS
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+// Configure AWS SDK v3
+const s3Client = new S3Client({
   region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
-const s3 = new AWS.S3();
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME || '';
 
 /**
@@ -15,6 +23,7 @@ const BUCKET_NAME = process.env.AWS_BUCKET_NAME || '';
  */
 export function getFileExtensionFromMimeType(mimeType: string): string {
   const mimeToExt: { [key: string]: string } = {
+    // Images
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/png': 'png',
@@ -22,73 +31,130 @@ export function getFileExtensionFromMimeType(mimeType: string): string {
     'image/webp': 'webp',
     'image/bmp': 'bmp',
     'image/tiff': 'tiff',
+    'image/svg+xml': 'svg',
+    // Videos
     'video/mp4': 'mp4',
     'video/mpeg': 'mpeg',
     'video/quicktime': 'mov',
     'video/x-msvideo': 'avi',
     'video/webm': 'webm',
+    'video/3gpp': '3gp',
+    'video/x-flv': 'flv',
+    // Audio
     'audio/mpeg': 'mp3',
     'audio/mp4': 'm4a',
     'audio/wav': 'wav',
     'audio/webm': 'webm',
     'audio/ogg': 'ogg',
+    'audio/aac': 'aac',
+    'audio/flac': 'flac',
+    'audio/amr': 'amr',
+    'audio/opus': 'opus',
+    // Documents
     'application/pdf': 'pdf',
     'application/msword': 'doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
     'application/vnd.ms-excel': 'xls',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
     'text/plain': 'txt',
+    'text/csv': 'csv',
     'application/zip': 'zip',
     'application/x-rar-compressed': 'rar',
+    'application/x-7z-compressed': '7z',
+    'application/json': 'json',
+    'application/xml': 'xml',
+    'text/html': 'html',
+    'text/css': 'css',
+    'text/javascript': 'js',
+    'application/javascript': 'js',
+    'application/rtf': 'rtf',
+    'application/vnd.oasis.opendocument.text': 'odt',
+    'application/vnd.oasis.opendocument.spreadsheet': 'ods',
+    'application/vnd.oasis.opendocument.presentation': 'odp',
   };
-
-  return mimeToExt[mimeType] || 'bin';
+  return mimeToExt[mimeType.toLowerCase()] || 'bin';
 }
 
 /**
- * Download media from URL and upload to S3
+ * Check if file type is supported by WhatsApp Cloud API
+ */
+export function isWhatsAppSupportedFileType(mimeType: string): boolean {
+  const supportedTypes = [
+    // Audio
+    'audio/aac',
+    'audio/mp4', 
+    'audio/mpeg',
+    'audio/amr',
+    'audio/ogg',
+    'audio/opus',
+    // Documents
+    'application/vnd.ms-powerpoint',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/pdf',
+    'text/plain',
+    'application/vnd.ms-excel',
+    // Images
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    // Videos
+    'video/mp4',
+    'video/3gpp',
+  ];
+  
+  return supportedTypes.includes(mimeType.toLowerCase());
+}
+
+/**
+ * Download a file from URL and upload to S3
  */
 export async function downloadAndUploadToS3(
-  mediaUrl: string,
+  fileUrl: string,
   senderId: string,
   mediaId: string,
-  mimeType: string,
-  accessToken: string
+  mimeType: string
 ): Promise<string | null> {
   try {
-    console.log(`Downloading media from: ${mediaUrl}`);
+    console.log(`Downloading file from URL: ${fileUrl}`);
     
-    // Download the media file
-    const response = await fetch(mediaUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    });
-
+    // Download the file
+    const response = await fetch(fileUrl);
     if (!response.ok) {
-      console.error(`Failed to download media: ${response.status} ${response.statusText}`);
-      return null;
+      throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
     }
 
-    const buffer = await response.arrayBuffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Generate S3 key
     const fileExtension = getFileExtensionFromMimeType(mimeType);
     const s3Key = `${senderId}/${mediaId}.${fileExtension}`;
 
-    console.log(`Uploading to S3: ${s3Key} (${buffer.byteLength} bytes)`);
+    console.log(`Uploading to S3: ${s3Key} (${buffer.length} bytes)`);
 
     // Upload to S3
-    const uploadParams = {
+    const uploadCommand = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
-      Body: Buffer.from(buffer),
+      Body: buffer,
       ContentType: mimeType,
-      ACL: 'private' as const,
-    };
+      ACL: 'private',
+      Metadata: {
+        'sender-id': senderId,
+        'media-id': mediaId,
+        'upload-timestamp': new Date().toISOString(),
+      },
+    });
 
-    const uploadResult = await s3.upload(uploadParams).promise();
-    console.log('S3 upload successful:', uploadResult.Location);
+    await s3Client.send(uploadCommand);
+    console.log('S3 upload successful');
 
-    // Generate pre-signed URL (valid for 24 hours)
+    // Generate presigned URL
     const presignedUrl = await generatePresignedUrl(senderId, mediaId, mimeType);
     return presignedUrl;
 
@@ -99,7 +165,7 @@ export async function downloadAndUploadToS3(
 }
 
 /**
- * Upload File object directly to S3
+ * Upload a File object directly to S3
  */
 export async function uploadFileToS3(
   file: File,
@@ -112,27 +178,24 @@ export async function uploadFileToS3(
 
     console.log(`Uploading file to S3: ${s3Key} (${file.size} bytes)`);
 
-    // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload to S3
-    const uploadParams = {
+    const uploadCommand = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
       Body: buffer,
       ContentType: file.type,
-      ACL: 'private' as const,
+      ACL: 'private',
       Metadata: {
         'original-filename': file.name,
         'upload-timestamp': new Date().toISOString(),
       },
-    };
+    });
 
-    const uploadResult = await s3.upload(uploadParams).promise();
-    console.log('S3 file upload successful:', uploadResult.Location);
+    await s3Client.send(uploadCommand);
+    console.log('S3 file upload successful');
 
-    // Generate pre-signed URL (valid for 24 hours)
     const presignedUrl = await generatePresignedUrl(senderId, mediaId, file.type);
     return presignedUrl;
 
@@ -143,35 +206,35 @@ export async function uploadFileToS3(
 }
 
 /**
- * Generate a pre-signed URL for an existing S3 object
+ * Generate a presigned URL for accessing S3 object
  */
 export async function generatePresignedUrl(
   senderId: string,
   mediaId: string,
-  mimeType: string
+  mimeType: string,
+  expiresIn: number = 3600
 ): Promise<string | null> {
   try {
     const fileExtension = getFileExtensionFromMimeType(mimeType);
     const s3Key = `${senderId}/${mediaId}.${fileExtension}`;
 
-    const params = {
+    const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
-      Expires: 86400, // 24 hours
-    };
+    });
 
-    const presignedUrl = await s3.getSignedUrlPromise('getObject', params);
-    console.log(`Generated pre-signed URL for: ${s3Key}`);
+    const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn });
+    console.log(`Generated presigned URL for ${s3Key} (expires in ${expiresIn}s)`);
+    
     return presignedUrl;
-
   } catch (error) {
-    console.error('Error generating pre-signed URL:', error);
+    console.error('Error generating presigned URL:', error);
     return null;
   }
 }
 
 /**
- * Check if a file exists in S3
+ * Check if file exists in S3
  */
 export async function checkS3FileExists(
   senderId: string,
@@ -182,11 +245,12 @@ export async function checkS3FileExists(
     const fileExtension = getFileExtensionFromMimeType(mimeType);
     const s3Key = `${senderId}/${mediaId}.${fileExtension}`;
 
-    await s3.headObject({
+    const command = new HeadObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
-    }).promise();
+    });
 
+    await s3Client.send(command);
     return true;
   } catch {
     return false;
@@ -194,7 +258,7 @@ export async function checkS3FileExists(
 }
 
 /**
- * Delete a file from S3
+ * Delete file from S3
  */
 export async function deleteFromS3(
   senderId: string,
@@ -205,12 +269,13 @@ export async function deleteFromS3(
     const fileExtension = getFileExtensionFromMimeType(mimeType);
     const s3Key = `${senderId}/${mediaId}.${fileExtension}`;
 
-    await s3.deleteObject({
+    const command = new DeleteObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
-    }).promise();
+    });
 
-    console.log(`Deleted from S3: ${s3Key}`);
+    await s3Client.send(command);
+    console.log(`Deleted S3 object: ${s3Key}`);
     return true;
   } catch (error) {
     console.error('Error deleting from S3:', error);

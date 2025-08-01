@@ -289,7 +289,7 @@ export default function ChatPage() {
   };
 
   if (!user) {
-    return (
+  return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
@@ -343,7 +343,7 @@ export default function ChatPage() {
                 onUserSelect={handleUserSelect}
                 currentUserId={user.id}
               />
-            </div>
+      </div>
           ) : (
             // Chat Window - Mobile
             <div className="w-full">
@@ -356,7 +356,7 @@ export default function ChatPage() {
                 isMobile={true}
                 isLoading={sendingMessage}
               />
-            </div>
+      </div>
           )}
         </>
       )}

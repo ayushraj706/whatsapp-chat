@@ -34,7 +34,7 @@ A fully functional WhatsApp-like web application built with Next.js 15, Supabase
 
 ### 1. Clone and Install
 
-```bash
+   ```bash
 git clone <your-repo-url>
 cd whatsapp-chat
 npm install
@@ -115,7 +115,7 @@ CREATE POLICY "Users can send messages" ON messages
 
 Create a `.env.local` file:
 
-```bash
+   ```bash
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=your_supabase_anon_key
@@ -139,9 +139,9 @@ WHATSAPP_BUSINESS_OWNER_ID=your_supabase_user_id
 
 ### 5. Run the Application
 
-```bash
-npm run dev
-```
+   ```bash
+   npm run dev
+   ```
 
 Visit `http://localhost:3000` to see your WhatsApp web clone!
 

@@ -21,6 +21,37 @@ interface MediaUploadProps {
   selectedUser: { id: string; name: string } | null;
 }
 
+// WhatsApp supported file types
+const WHATSAPP_SUPPORTED_TYPES = [
+  // Audio
+  'audio/aac',
+  'audio/mp4', 
+  'audio/mpeg',
+  'audio/amr',
+  'audio/ogg',
+  'audio/opus',
+  // Documents
+  'application/vnd.ms-powerpoint',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/pdf',
+  'text/plain',
+  'application/vnd.ms-excel',
+  // Images
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  // Videos
+  'video/mp4',
+  'video/3gpp',
+];
+
+function isWhatsAppSupportedFileType(mimeType: string): boolean {
+  return WHATSAPP_SUPPORTED_TYPES.includes(mimeType.toLowerCase());
+}
+
 export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUploadProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,6 +62,34 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
     if (file.type.startsWith('image/')) return 'image';
     if (file.type.startsWith('audio/')) return 'audio';
     if (file.type.startsWith('video/')) return 'video';
+    
+    // Enhanced document type detection
+    const documentTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv',
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/json',
+      'application/xml',
+      'text/html',
+      'text/css',
+      'text/javascript',
+      'application/javascript'
+    ];
+    
+    if (documentTypes.includes(file.type) || file.type.startsWith('text/')) {
+      return 'document';
+    }
+    
+    // Default to document for unknown types
     return 'document';
   };
 
@@ -46,30 +105,50 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
     });
   };
 
-  const processFiles = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files);
-    const newMediaFiles: MediaFile[] = [];
+  const processFiles = async (fileList: FileList | File[]) => {
+    const filesArray = Array.from(fileList);
+    const validFiles: MediaFile[] = [];
+    const errors: string[] = [];
 
-    for (const file of fileArray) {
-      // Check file size (max 25MB for WhatsApp)
+    for (const file of filesArray) {
+      // Check file size (25MB limit)
       if (file.size > 25 * 1024 * 1024) {
-        alert(`File "${file.name}" is too large. Maximum size is 25MB.`);
+        errors.push(`${file.name}: File size exceeds 25MB limit`);
         continue;
       }
 
-      const preview = await createFilePreview(file);
+      // Check if file type is supported by WhatsApp
+      if (!isWhatsAppSupportedFileType(file.type)) {
+        errors.push(`${file.name}: File type '${file.type}' is not supported by WhatsApp. Supported types include: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG, WEBP, MP4, 3GP, AAC, MP3, MPEG, AMR, OGG, OPUS`);
+        continue;
+      }
+
       const mediaFile: MediaFile = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         file,
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: getFileType(file),
-        preview,
+        preview: undefined, // Preview will be generated after upload
         caption: '',
       };
 
-      newMediaFiles.push(mediaFile);
+      // Create preview for images
+      if (mediaFile.type === 'image') {
+        const preview = await createFilePreview(file);
+        setMediaFiles(prev => 
+          prev.map(f => f.id === mediaFile.id ? { ...f, preview } : f)
+        );
+      }
+
+      validFiles.push(mediaFile);
     }
 
-    setMediaFiles(prev => [...prev, ...newMediaFiles]);
+    if (errors.length > 0) {
+      alert('Some files could not be added:\n\n' + errors.join('\n\n'));
+    }
+
+    if (validFiles.length > 0) {
+      setMediaFiles(prev => [...prev, ...validFiles]);
+    }
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -361,7 +440,7 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,.json,.xml"
           onChange={handleFileSelect}
           className="hidden"
         />

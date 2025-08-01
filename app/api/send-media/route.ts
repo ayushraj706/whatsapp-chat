@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { uploadFileToS3 } from '@/lib/aws-s3';
+import { uploadFileToS3, isWhatsAppSupportedFileType } from '@/lib/aws-s3';
 
 // WhatsApp Cloud API configuration
 const WHATSAPP_PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
@@ -22,6 +22,8 @@ async function uploadMediaToWhatsApp(file: File): Promise<MediaUploadResult | nu
       return null;
     }
 
+    console.log(`Uploading to WhatsApp: ${file.name} (${file.type}, ${file.size} bytes)`);
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', file.type);
@@ -40,19 +42,35 @@ async function uploadMediaToWhatsApp(file: File): Promise<MediaUploadResult | nu
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('WhatsApp media upload failed:', errorText);
+      console.error('WhatsApp media upload failed:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        error: errorText,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      });
       return null;
     }
 
     const result = await uploadResponse.json();
-    console.log('Media uploaded to WhatsApp:', result);
+    console.log('Media uploaded to WhatsApp successfully:', {
+      mediaId: result.id,
+      fileName: file.name,
+      fileType: file.type
+    });
 
     return {
       id: result.id,
       url: `https://graph.facebook.com/${WHATSAPP_API_VERSION}/${result.id}`,
     };
   } catch (error) {
-    console.error('Error uploading media to WhatsApp:', error);
+    console.error('Error uploading media to WhatsApp:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size
+    });
     return null;
   }
 }
@@ -76,7 +94,7 @@ async function sendMediaMessage(
       image?: { id: string; caption?: string };
       video?: { id: string; caption?: string };
       audio?: { id: string };
-      document?: { id: string };
+      document?: { id: string; filename?: string };
     } = {
       messaging_product: 'whatsapp',
       to: to,
@@ -174,6 +192,20 @@ export async function POST(request: NextRequest) {
       return new NextResponse('WhatsApp API not configured', { status: 500 });
     }
 
+    // Validate file types before processing
+    const unsupportedFiles = files.filter(file => !isWhatsAppSupportedFileType(file.type));
+    if (unsupportedFiles.length > 0) {
+      console.error('Unsupported file types detected:', unsupportedFiles.map(f => ({ name: f.name, type: f.type })));
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Unsupported file types', 
+          message: `WhatsApp does not support the following file types: ${unsupportedFiles.map(f => f.type).join(', ')}`,
+          unsupportedFiles: unsupportedFiles.map(f => ({ name: f.name, type: f.type }))
+        }), 
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const results = [];
     const timestamp = new Date().toISOString();
 
@@ -254,7 +286,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update last_active for the sender
+    // Update last_active for the sender - Fix RLS policy issue
     const { error: userUpdateError } = await supabase
       .from('users')
       .upsert([{
@@ -262,11 +294,13 @@ export async function POST(request: NextRequest) {
         name: user.user_metadata?.full_name || user.email || 'Unknown User',
         last_active: timestamp
       }], {
-        onConflict: 'id'
+        onConflict: 'id',
+        ignoreDuplicates: false
       });
 
     if (userUpdateError) {
       console.error('Error updating user last_active:', userUpdateError);
+      // Don't fail the request for this non-critical update
     }
 
     // Return results
