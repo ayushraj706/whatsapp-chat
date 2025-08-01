@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     // Verify user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error('Authentication error:', authError);
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required parameters
     if (!to || !message) {
+      console.error('Missing required parameters:', { to: !!to, message: !!message });
       return new NextResponse('Missing required parameters: to, message', { status: 400 });
     }
 
@@ -47,7 +49,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Sending message to WhatsApp API:', {
       to,
-      message: message.substring(0, 50) + (message.length > 50 ? '...' : '')
+      message: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
+      userId: user.id
     });
 
     // Send message via WhatsApp Cloud API
@@ -79,25 +82,40 @@ export async function POST(request: NextRequest) {
 
     console.log('Message sent successfully via WhatsApp API:', messageId);
 
+    // Prepare message object for database insertion
+    const messageObject = {
+      id: messageId || `outgoing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      sender_id: user.id,
+      receiver_id: to,
+      content: message,
+      timestamp: timestamp,
+      is_sent_by_me: true
+    };
+
+    console.log('Storing message in database:', {
+      id: messageObject.id,
+      sender_id: messageObject.sender_id,
+      receiver_id: messageObject.receiver_id,
+      content: messageObject.content.substring(0, 50) + (messageObject.content.length > 50 ? '...' : ''),
+      timestamp: messageObject.timestamp
+    });
+
     // Store the sent message in our database
-    const { error: dbError } = await supabase
+    const { data: insertedMessage, error: dbError } = await supabase
       .from('messages')
-      .insert([{
-        id: messageId || `outgoing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        sender_id: user.id,
-        receiver_id: to,
-        content: message,
-        timestamp: timestamp,
-        is_sent_by_me: true
-      }]);
+      .insert([messageObject])
+      .select()
+      .single();
 
     if (dbError) {
       console.error('Error storing sent message in database:', dbError);
       // Don't fail the request if database storage fails, message was already sent
+    } else {
+      console.log('Message stored successfully in database:', insertedMessage?.id);
     }
 
     // Update last_active for the sender (current user)
-    await supabase
+    const { error: userUpdateError } = await supabase
       .from('users')
       .upsert([{
         id: user.id,
@@ -107,12 +125,17 @@ export async function POST(request: NextRequest) {
         onConflict: 'id'
       });
 
+    if (userUpdateError) {
+      console.error('Error updating user last_active:', userUpdateError);
+    }
+
     // Return success response
     return NextResponse.json({
       success: true,
-      messageId: messageId,
+      messageId: messageObject.id,
       timestamp: timestamp,
-      whatsappResponse: responseData
+      whatsappResponse: responseData,
+      storedInDb: !dbError
     });
 
   } catch (error) {

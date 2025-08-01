@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, MessageCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, MessageCircle, Loader2, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface ChatUser {
@@ -26,6 +26,7 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   onBack?: () => void;
+  onClose?: () => void;
   currentUserId: string;
   isMobile?: boolean;
   isLoading?: boolean;
@@ -36,6 +37,7 @@ export function ChatWindow({
   messages, 
   onSendMessage, 
   onBack, 
+  onClose,
   currentUserId, 
   isMobile = false,
   isLoading = false
@@ -48,6 +50,25 @@ export function ChatWindow({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle ESC key press within the chat window
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isMobile && onBack) {
+          onBack();
+        } else if (!isMobile && onClose) {
+          onClose();
+        }
+      }
+    };
+
+    // Only add listener when chat window is active (selectedUser exists)
+    if (selectedUser) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [selectedUser, isMobile, onBack, onClose]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +125,9 @@ export function ChatWindow({
         <p className="text-muted-foreground text-center max-w-md">
           Select a conversation from the sidebar to start messaging, or create a new chat.
         </p>
+        <p className="text-sm text-muted-foreground mt-4 opacity-75">
+          Press <kbd className="px-2 py-1 bg-muted rounded text-xs">ESC</kbd> to close chat window
+        </p>
       </div>
     );
   }
@@ -116,6 +140,7 @@ export function ChatWindow({
           <button 
             onClick={onBack}
             className="p-2 hover:bg-muted rounded-full transition-colors"
+            title="Back to contacts"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -138,6 +163,15 @@ export function ChatWindow({
             )}
           </p>
         </div>
+        {!isMobile && onClose && (
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-muted rounded-full transition-colors"
+            title="Close chat (ESC)"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -212,6 +246,7 @@ export function ChatWindow({
             className="flex-1 border-border focus:ring-green-500"
             maxLength={1000}
             disabled={isLoading}
+            autoFocus
           />
           <Button 
             type="submit" 

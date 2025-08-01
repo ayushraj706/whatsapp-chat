@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { UserList } from "@/components/chat/user-list";
 import { ChatWindow } from "@/components/chat/chat-window";
@@ -42,6 +42,25 @@ export default function ChatPage() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // Handle ESC key press to close chat window
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isMobile && showChat) {
+          // On mobile, go back to user list
+          handleBackToUsers();
+        } else if (!isMobile && selectedUser) {
+          // On desktop, close chat window
+          setSelectedUser(null);
+          setMessages([]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobile, showChat, selectedUser]);
+
   // Get current user
   useEffect(() => {
     const getUser = async () => {
@@ -53,6 +72,8 @@ export default function ChatPage() {
 
   // Subscribe to users table for real-time updates
   useEffect(() => {
+    if (!user) return;
+
     const fetchUsers = async () => {
       const { data } = await supabase
         .from('users')
@@ -66,10 +87,20 @@ export default function ChatPage() {
 
     // Set up real-time subscription for users
     const usersSubscription = supabase
-      .channel('users')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+      .channel('users-channel')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'users' 
+      }, (payload) => {
+        console.log('Users table change:', payload);
+        
         if (payload.eventType === 'INSERT') {
-          setUsers((prev) => [payload.new as ChatUser, ...prev]);
+          setUsers((prev) => {
+            const exists = prev.find(u => u.id === payload.new.id);
+            if (exists) return prev;
+            return [payload.new as ChatUser, ...prev];
+          });
         } else if (payload.eventType === 'UPDATE') {
           setUsers((prev) => 
             prev.map((u) => u.id === payload.new.id ? payload.new as ChatUser : u)
@@ -83,53 +114,110 @@ export default function ChatPage() {
     return () => {
       usersSubscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
 
-  // Subscribe to messages for selected user
+  // Subscribe to messages for selected user with improved real-time handling
   useEffect(() => {
-    if (!selectedUser || !user) return;
+    if (!selectedUser || !user) {
+      setMessages([]);
+      return;
+    }
 
     const fetchMessages = async () => {
-      const { data } = await supabase
+      console.log(`Fetching messages between ${user.id} and ${selectedUser.id}`);
+      
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${user.id})`)
         .order('timestamp', { ascending: true });
       
-      if (data) setMessages(data);
+      if (error) {
+        console.error('Error fetching messages:', error);
+      } else {
+        console.log(`Fetched ${data?.length || 0} messages`);
+        setMessages(data || []);
+      }
     };
 
     fetchMessages();
 
-    // Set up real-time subscription for messages
+    // Set up real-time subscription for messages with a unique channel name
+    const channelName = `messages-${user.id}-${selectedUser.id}`;
     const messagesSubscription = supabase
-      .channel('messages')
+      .channel(channelName)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'messages',
-        filter: `or(and(sender_id.eq.${user.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${user.id}))`
+        table: 'messages'
       }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as Message]);
+        console.log('New message received:', payload);
+        
+        const newMessage = payload.new as Message;
+        
+        // Check if this message belongs to the current conversation
+        const isRelevantMessage = 
+          (newMessage.sender_id === user.id && newMessage.receiver_id === selectedUser.id) ||
+          (newMessage.sender_id === selectedUser.id && newMessage.receiver_id === user.id);
+        
+        if (isRelevantMessage) {
+          console.log('Adding message to conversation');
+          setMessages((prev) => {
+            // Avoid duplicates
+            const exists = prev.find(m => m.id === newMessage.id);
+            if (exists) return prev;
+            
+            // Insert message in correct chronological order
+            const newMessages = [...prev, newMessage];
+            return newMessages.sort((a, b) => 
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+          });
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'messages'
+      }, (payload) => {
+        console.log('Message updated:', payload);
+        
+        const updatedMessage = payload.new as Message;
+        
+        // Check if this message belongs to the current conversation
+        const isRelevantMessage = 
+          (updatedMessage.sender_id === user.id && updatedMessage.receiver_id === selectedUser.id) ||
+          (updatedMessage.sender_id === selectedUser.id && updatedMessage.receiver_id === user.id);
+        
+        if (isRelevantMessage) {
+          setMessages((prev) => 
+            prev.map(m => m.id === updatedMessage.id ? updatedMessage : m)
+          );
+        }
       })
       .subscribe();
 
+    console.log(`Subscribed to messages channel: ${channelName}`);
+
     return () => {
+      console.log(`Unsubscribing from messages channel: ${channelName}`);
       messagesSubscription.unsubscribe();
     };
   }, [selectedUser, user]);
 
-  const handleUserSelect = (user: ChatUser) => {
+  const handleUserSelect = useCallback((user: ChatUser) => {
+    console.log('Selected user:', user);
     setSelectedUser(user);
     if (isMobile) {
       setShowChat(true);
     }
-  };
+  }, [isMobile]);
 
-  const handleBackToUsers = () => {
+  const handleBackToUsers = useCallback(() => {
     setShowChat(false);
     setSelectedUser(null);
-  };
+    setMessages([]);
+  }, []);
 
   const handleSendMessage = async (content: string) => {
     if (!selectedUser || !user || sendingMessage) return;
@@ -137,6 +225,8 @@ export default function ChatPage() {
     setSendingMessage(true);
     
     try {
+      console.log(`Sending message to ${selectedUser.id}: ${content}`);
+      
       // Call the WhatsApp API endpoint which handles both WhatsApp sending and database storage
       const response = await fetch('/api/send-message', {
         method: 'POST',
@@ -228,6 +318,10 @@ export default function ChatPage() {
               onSendMessage={handleSendMessage}
               currentUserId={user.id}
               isLoading={sendingMessage}
+              onClose={() => {
+                setSelectedUser(null);
+                setMessages([]);
+              }}
             />
           </div>
         </>
