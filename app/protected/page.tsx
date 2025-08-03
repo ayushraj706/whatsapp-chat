@@ -9,9 +9,14 @@ import { User } from "@supabase/supabase-js";
 interface ChatUser {
   id: string;
   name: string;
+  custom_name?: string;
+  whatsapp_name?: string;
   last_active: string;
-  unread_count?: number; // Added for unread count
-  last_message_time?: string; // Added for last message time
+  unread_count?: number;
+  last_message_time?: string;
+  last_message?: string;
+  last_message_type?: string;
+  last_message_sender?: string;
 }
 
 interface Message {
@@ -23,6 +28,13 @@ interface Message {
   is_sent_by_me: boolean;
   message_type?: string;
   media_data?: string | null;
+}
+
+interface UnreadConversation {
+  conversation_id: string;
+  display_name: string;
+  unread_count: number;
+  last_message_time: string;
 }
 
 export default function ChatPage() {
@@ -74,50 +86,129 @@ export default function ChatPage() {
     getUser();
   }, []);
 
-  // Subscribe to users table for real-time updates
+  // Subscribe to users table for real-time updates with optimized loading
   useEffect(() => {
     if (!user) return;
 
+    let isInitialLoad = true;
+
     const fetchUsers = async () => {
-      // Use the new user_conversations view instead of users table
-      const { data } = await supabase
+      console.log('Fetching user conversations...');
+      
+      // Use the updated user_conversations view with enhanced name handling
+      const { data, error } = await supabase
         .from('user_conversations')
         .select('*')
+        .order('has_unread', { ascending: false })
         .order('last_message_time', { ascending: false });
       
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+
       if (data) {
-        console.log('Fetched user conversations:', data);
-        setUsers(data);
+        console.log(`Fetched ${data.length} user conversations`);
+        
+        // Transform data to match ChatUser interface
+        const transformedUsers: ChatUser[] = data.map(user => ({
+          id: user.id,
+          name: user.display_name, // This now uses the priority logic from the view
+          custom_name: user.custom_name,
+          whatsapp_name: user.whatsapp_name,
+          last_active: user.last_active,
+          unread_count: user.unread_count || 0,
+          last_message_time: user.last_message_time,
+          last_message: user.last_message,
+          last_message_type: user.last_message_type,
+          last_message_sender: user.last_message_sender
+        }));
+
+        setUsers(transformedUsers);
+
+        // On initial load, preload top 10 unread conversations
+        if (isInitialLoad) {
+          isInitialLoad = false;
+          preloadUnreadConversations();
+        }
       }
     };
 
+    const preloadUnreadConversations = async () => {
+      try {
+        console.log('Preloading unread conversations...');
+        
+        // Get top 10 unread conversations
+        const { data: unreadConversations, error } = await supabase.rpc('get_unread_conversations', {
+          limit_count: 10
+        });
+
+        if (error) {
+          console.error('Error preloading unread conversations:', error);
+          return;
+        }
+
+        if (unreadConversations && unreadConversations.length > 0) {
+          console.log(`Preloading messages for ${unreadConversations.length} unread conversations`);
+          
+          // Preload messages for each unread conversation (in parallel)
+          const preloadPromises = unreadConversations.map(async (conversation: UnreadConversation) => {
+            try {
+              const { data: messages, error: messagesError } = await supabase
+                .from('messages')
+                .select('*')
+                .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversation.conversation_id}),and(sender_id.eq.${conversation.conversation_id},receiver_id.eq.${user.id})`)
+                .order('timestamp', { ascending: true })
+                .limit(50); // Limit to last 50 messages for performance
+
+              if (messagesError) {
+                console.error(`Error preloading messages for ${conversation.conversation_id}:`, messagesError);
+              } else {
+                console.log(`Preloaded ${messages?.length || 0} messages for ${conversation.display_name}`);
+                // Store in a cache if needed (optional - for now just log)
+              }
+            } catch (error) {
+              console.error(`Error in preload for ${conversation.conversation_id}:`, error);
+            }
+          });
+
+          // Wait for all preload operations to complete
+          await Promise.allSettled(preloadPromises);
+          console.log('Preloading completed');
+        }
+      } catch (error) {
+        console.error('Error in preloadUnreadConversations:', error);
+      }
+    };
+
+    // Initial fetch
     fetchUsers();
 
     // Set up real-time subscription for users table changes
     const usersSubscription = supabase
-      .channel('users-channel')
+      .channel('users-channel-optimized')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'users' 
       }, (payload) => {
-        console.log('Users table change:', payload);
-        // Refresh the conversations view when users table changes
-        fetchUsers();
+        console.log('Users table change:', payload.eventType);
+        // Debounce the refresh to avoid excessive calls
+        setTimeout(fetchUsers, 100);
       })
       .subscribe();
 
     // Set up real-time subscription for messages table changes
     const messagesSubscription = supabase
-      .channel('messages-global-channel')
+      .channel('messages-global-channel-optimized')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'messages' 
       }, (payload) => {
-        console.log('Messages table change:', payload);
-        // Refresh the conversations view when messages table changes
-        fetchUsers();
+        console.log('Messages table change:', payload.eventType);
+        // Debounce the refresh to avoid excessive calls
+        setTimeout(fetchUsers, 100);
       })
       .subscribe();
 
@@ -263,6 +354,71 @@ export default function ChatPage() {
     setMessages([]);
   }, []);
 
+  const refreshUsers = useCallback(async () => {
+    if (!user) return;
+    
+    console.log('Refreshing user conversations...');
+    
+    const { data, error } = await supabase
+      .from('user_conversations')
+      .select('*')
+      .order('has_unread', { ascending: false })
+      .order('last_message_time', { ascending: false });
+    
+    if (error) {
+      console.error('Error refreshing users:', error);
+      return;
+    }
+
+    if (data) {
+      const transformedUsers: ChatUser[] = data.map(user => ({
+        id: user.id,
+        name: user.display_name,
+        custom_name: user.custom_name,
+        whatsapp_name: user.whatsapp_name,
+        last_active: user.last_active,
+        unread_count: user.unread_count || 0,
+        last_message_time: user.last_message_time,
+        last_message: user.last_message,
+        last_message_type: user.last_message_type,
+        last_message_sender: user.last_message_sender
+      }));
+
+      setUsers(transformedUsers);
+      console.log(`Refreshed ${transformedUsers.length} user conversations`);
+    }
+  }, [user, supabase]);
+
+  const handleUpdateName = useCallback(async (userId: string, customName: string) => {
+    try {
+      const response = await fetch('/api/users/update-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          customName: customName.trim() || null
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'Failed to update name');
+      }
+
+      console.log('Name updated successfully:', result);
+      
+      // Refresh users list to show updated name
+      await refreshUsers();
+
+    } catch (error) {
+      console.error('Error updating name:', error);
+      throw error; // Re-throw to let the dialog handle the error
+    }
+  }, [refreshUsers]);
+
   const handleSendMessage = async (content: string) => {
     if (!selectedUser || !user || sendingMessage) return;
 
@@ -353,6 +509,7 @@ export default function ChatPage() {
               selectedUser={selectedUser}
               onUserSelect={handleUserSelect}
               currentUserId={user.id}
+              onUsersUpdate={refreshUsers}
             />
           </div>
           
@@ -364,6 +521,7 @@ export default function ChatPage() {
               onSendMessage={handleSendMessage}
               currentUserId={user.id}
               isLoading={sendingMessage}
+              onUpdateName={handleUpdateName}
               onClose={() => {
                 setSelectedUser(null);
                 setMessages([]);
@@ -384,6 +542,7 @@ export default function ChatPage() {
                 selectedUser={selectedUser}
                 onUserSelect={handleUserSelect}
                 currentUserId={user.id}
+                onUsersUpdate={refreshUsers}
               />
       </div>
           ) : (
@@ -397,6 +556,7 @@ export default function ChatPage() {
                 currentUserId={user.id}
                 isMobile={true}
                 isLoading={sendingMessage}
+                onUpdateName={handleUpdateName}
               />
       </div>
           )}

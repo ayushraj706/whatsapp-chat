@@ -7,10 +7,13 @@ import { ArrowLeft, Send, MessageCircle, Loader2, X, Download, FileText, Image a
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { MediaUpload } from "./media-upload";
+import { UserInfoDialog } from "./user-info-dialog";
 
 interface ChatUser {
   id: string;
   name: string;
+  custom_name?: string;
+  whatsapp_name?: string;
   last_active: string;
 }
 
@@ -58,6 +61,7 @@ interface ChatWindowProps {
   currentUserId: string;
   isMobile?: boolean;
   isLoading?: boolean;
+  onUpdateName?: (userId: string, customName: string) => Promise<void>;
 }
 
 export function ChatWindow({ 
@@ -68,7 +72,8 @@ export function ChatWindow({
   onClose,
   currentUserId, 
   isMobile = false,
-  isLoading = false
+  isLoading = false,
+  onUpdateName
 }: ChatWindowProps) {
   const [messageInput, setMessageInput] = useState("");
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -79,6 +84,7 @@ export function ChatWindow({
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const unreadIndicatorRef = useRef<HTMLDivElement>(null);
@@ -203,6 +209,16 @@ export function ChatWindow({
     } finally {
       setSendingMedia(false);
     }
+  };
+
+  const handleUpdateName = async (userId: string, customName: string) => {
+    if (onUpdateName) {
+      await onUpdateName(userId, customName);
+    }
+  };
+
+  const getDisplayName = (user: ChatUser) => {
+    return user.custom_name || user.whatsapp_name || user.name || user.id;
   };
 
   const formatTime = (timestamp: string) => {
@@ -732,8 +748,12 @@ export function ChatWindow({
             {selectedUser.name.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <h2 className="font-semibold text-foreground">{selectedUser.name}</h2>
+        <div 
+          className="flex-1 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+          onClick={() => setShowUserInfo(true)}
+          title="View contact info"
+        >
+          <h2 className="font-semibold text-foreground">{getDisplayName(selectedUser)}</h2>
           <p className="text-sm text-muted-foreground">
             {isLoading || sendingMedia ? (
               <span className="flex items-center gap-1">
@@ -874,6 +894,14 @@ export function ChatWindow({
         onClose={() => setShowMediaUpload(false)}
         onSend={handleSendMedia}
         selectedUser={selectedUser}
+      />
+
+      {/* User Info Dialog */}
+      <UserInfoDialog
+        isOpen={showUserInfo}
+        onClose={() => setShowUserInfo(false)}
+        user={selectedUser}
+        onUpdateName={handleUpdateName}
       />
     </div>
   );
