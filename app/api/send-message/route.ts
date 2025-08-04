@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
 
     const responseData = await whatsappResponse.json();
 
+    console.log('WhatsApp response:', responseData);
+
     if (!whatsappResponse.ok) {
       console.error('WhatsApp API error:', responseData);
       return new NextResponse(
