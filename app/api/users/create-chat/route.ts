@@ -22,28 +22,24 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Missing phoneNumber parameter', { status: 400 });
     }
 
-    // Clean and validate phone number
-    let cleanPhoneNumber = phoneNumber.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+    // Clean and validate phone number - match WhatsApp format (without + prefix)
+    const cleanPhoneNumber = phoneNumber.replace(/\s+/g, '').replace(/[^\d]/g, ''); // Remove all non-digits including +
     
-    // Add + if not present and doesn't start with country code
-    if (!cleanPhoneNumber.startsWith('+')) {
-      cleanPhoneNumber = '+' + cleanPhoneNumber;
-    }
-
-    // Validate phone number format (E.164 format)
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    // Validate phone number format (10-15 digits without + prefix to match WhatsApp webhook format)
+    const phoneRegex = /^\d{10,15}$/;
     if (!phoneRegex.test(cleanPhoneNumber)) {
       return new NextResponse(
         JSON.stringify({ 
           error: 'Invalid phone number format', 
-          message: 'Phone number must be in international format (e.g., +1234567890)' 
+          message: 'Phone number must contain 10-15 digits (e.g., 918097296453)' 
         }), 
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if trying to chat with own number
-    if (cleanPhoneNumber === user.id) {
+    // Check if trying to chat with own number (handle both formats)
+    const userIdWithoutPlus = user.id.replace(/^\+/, ''); // Remove + prefix if present
+    if (cleanPhoneNumber === user.id || cleanPhoneNumber === userIdWithoutPlus) {
       return new NextResponse(
         JSON.stringify({ 
           error: 'Cannot create chat with yourself' 
