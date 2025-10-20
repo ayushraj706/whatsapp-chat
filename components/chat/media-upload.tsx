@@ -105,7 +105,7 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
     });
   };
 
-  const processFiles = async (fileList: FileList | File[]) => {
+  const processFiles = useCallback(async (fileList: FileList | File[]) => {
     const filesArray = Array.from(fileList);
     const validFiles: MediaFile[] = [];
     const errors: string[] = [];
@@ -149,7 +149,7 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
     if (validFiles.length > 0) {
       setMediaFiles(prev => [...prev, ...validFiles]);
     }
-  };
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -169,7 +169,7 @@ export function MediaUpload({ isOpen, onClose, onSend, selectedUser }: MediaUplo
     if (files.length > 0) {
       processFiles(files);
     }
-  }, []);
+  }, [processFiles]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

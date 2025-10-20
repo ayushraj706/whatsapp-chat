@@ -1125,6 +1125,7 @@ Create new chat.
 
 - ✅ `NEXT_PUBLIC_SUPABASE_URL`
 - ✅ `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY`
+- ✅ `SUPABASE_SERVICE_ROLE_KEY`
 - ✅ `AWS_ACCESS_KEY_ID`
 - ✅ `AWS_SECRET_ACCESS_KEY`
 - ✅ `AWS_REGION`
@@ -1226,7 +1227,7 @@ This project is licensed under the MIT License.
 1. **Documentation**: Read this README
 2. **Issues**: Check existing issues
 3. **Discussions**: GitHub Discussions
-4. **Email**: support@wachat.example.com
+4. **Email**: wachat@aryanshinde.in
 
 ---
 

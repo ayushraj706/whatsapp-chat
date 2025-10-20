@@ -63,7 +63,6 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
   const [groups, setGroups] = useState<Group[]>([]);
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [groupFilter, setGroupFilter] = useState<string | null>(null);
   
   const supabase = createClient();
   const router = useRouter();
@@ -265,7 +264,7 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
         
         if (failedCount > 0) {
           message += `\n\nFailed to add ${failedCount} user${failedCount !== 1 ? 's' : ''}:`;
-          result.results.failed.forEach((failure: any) => {
+          result.results.failed.forEach((failure: { phoneNumber: string; error: string }) => {
             message += `\n- ${failure.phoneNumber}: ${failure.error}`;
           });
         }

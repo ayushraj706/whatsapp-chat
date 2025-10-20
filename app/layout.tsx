@@ -9,8 +9,15 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "WaChat - Enterprise WhatsApp Business Platform",
+  description: "Production-ready WhatsApp Business integration platform built with Next.js 15, Supabase, and WhatsApp Cloud API. Real-time messaging, broadcast groups, template management, and more.",
+  keywords: ["WhatsApp", "Business", "Messaging", "Next.js", "Supabase", "Real-time", "Broadcast", "Templates"],
+  authors: [{ name: "WaChat" }],
+  openGraph: {
+    title: "WaChat - Enterprise WhatsApp Business Platform",
+    description: "Production-ready WhatsApp Business integration platform with real-time messaging, broadcast groups, and template management.",
+    type: "website",
+  },
 };
 
 const geistSans = Geist({

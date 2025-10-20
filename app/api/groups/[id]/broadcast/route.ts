@@ -22,7 +22,7 @@ export async function POST(
 
     const { id: groupId } = await params;
     const body = await request.json();
-    const { message, messageType = 'text', mediaData = null, templateName = null, templateData = null, variables = null } = body;
+    const { message, templateName = null, templateData = null, variables = null } = body;
 
     // Validate input
     if (!message && !templateName) {
@@ -164,14 +164,27 @@ export async function POST(
           });
 
           // Process template components for storage with variables replaced
+          interface ProcessedComponent {
+            format?: string;
+            text?: string;
+            media_url?: string | null;
+          }
+          
+          interface ProcessedButton {
+            type: string;
+            text: string;
+            url?: string;
+            phone_number?: string;
+          }
+          
           const processedComponents = {
-            header: null as any,
-            body: null as any,
-            footer: null as any,
-            buttons: [] as any[]
+            header: null as ProcessedComponent | null,
+            body: null as ProcessedComponent | null,
+            footer: null as ProcessedComponent | null,
+            buttons: [] as ProcessedButton[]
           };
 
-          templateData.components?.forEach((component: any) => {
+          templateData.components?.forEach((component: { type: string; format?: string; text?: string; buttons?: ProcessedButton[] }) => {
             switch (component.type) {
               case 'HEADER':
                 processedComponents.header = {
@@ -192,7 +205,7 @@ export async function POST(
                 break;
               case 'BUTTONS':
                 if (component.buttons) {
-                  processedComponents.buttons = component.buttons.map((button: any) => ({
+                  processedComponents.buttons = component.buttons.map((button) => ({
                     type: button.type,
                     text: button.text,
                     url: button.url,
@@ -204,7 +217,7 @@ export async function POST(
           });
 
           // Generate display content from body with variables replaced
-          const bodyComponent = templateData.components?.find((c: any) => c.type === 'BODY');
+          const bodyComponent = templateData.components?.find((c: { type: string }) => c.type === 'BODY');
           messageContent = bodyComponent?.text && variables?.body 
             ? replaceVariables(bodyComponent.text, variables.body)
             : (message || `Template: ${templateName}`);

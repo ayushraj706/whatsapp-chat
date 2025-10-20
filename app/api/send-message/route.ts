@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET handler for checking API status (now user-specific)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     
@@ -231,7 +231,7 @@ export async function GET(request: NextRequest) {
       version: apiVersion,
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       status: 'WhatsApp Send Message API',
       configured: false,

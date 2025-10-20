@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
  * Handle single user creation
  */
 async function handleSingleUserCreation(
-  supabase: any,
-  user: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: { id: string; email?: string },
   phoneNumber: string,
   customName?: string
 ) {
@@ -139,8 +139,8 @@ async function handleSingleUserCreation(
  * Handle bulk user creation
  */
 async function handleBulkUserCreation(
-  supabase: any,
-  user: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: { id: string; email?: string },
   users: Array<{ phoneNumber: string; customName?: string }>
 ) {
   if (!Array.isArray(users) || users.length === 0) {
@@ -160,8 +160,8 @@ async function handleBulkUserCreation(
   console.log(`Bulk creating ${users.length} users`);
 
   const results = {
-    success: [] as any[],
-    failed: [] as any[],
+    success: [] as Array<{ phoneNumber: string; customName?: string; user: unknown; isNew?: boolean }>,
+    failed: [] as Array<{ phoneNumber: string; customName?: string; error: string }>,
     totalRequested: users.length,
     successCount: 0,
     failedCount: 0

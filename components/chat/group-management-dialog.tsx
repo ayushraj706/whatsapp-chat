@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Users, Save, Loader2, Search, Trash2 } from "lucide-react";
+import { X, Users, Save, Loader2, Search } from "lucide-react";
 
 interface ChatUser {
   id: string;
@@ -63,7 +63,7 @@ export function GroupManagementDialog({
       const data = await response.json();
       
       if (data.success && data.members) {
-        setSelectedUserIds(data.members.map((m: any) => m.user_id));
+        setSelectedUserIds(data.members.map((m: { user_id: string }) => m.user_id));
       }
     } catch (error) {
       console.error('Error loading group members:', error);
@@ -108,7 +108,7 @@ export function GroupManagementDialog({
         // Get current members
         const membersResponse = await fetch(`/api/groups/${group.id}/members`);
         const membersData = await membersResponse.json();
-        const currentMemberIds = membersData.members?.map((m: any) => m.user_id) || [];
+        const currentMemberIds = membersData.members?.map((m: { user_id: string }) => m.user_id) || [];
 
         // Find members to add and remove
         const toAdd = selectedUserIds.filter(id => !currentMemberIds.includes(id));

@@ -44,7 +44,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the update object
-    const updateData: any = {
+    const updateData: {
+      updated_at: string;
+      access_token?: string;
+      access_token_added?: boolean;
+      phone_number_id?: string;
+      verify_token?: string;
+      api_version?: string;
+      webhook_verified?: boolean;
+      webhook_token?: string;
+    } = {
       updated_at: new Date().toISOString(),
     };
 
@@ -149,7 +158,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET handler for retrieving user settings
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     
