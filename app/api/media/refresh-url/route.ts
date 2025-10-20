@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generatePresignedUrl } from '@/lib/aws-s3';
 
+export const runtime = 'nodejs';
+
 /**
  * POST handler for refreshing S3 pre-signed URLs
  * This is useful when URLs expire and need to be regenerated

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { downloadAndUploadToS3 } from '@/lib/aws-s3';
 
+export const runtime = 'nodejs';
+
 /**
  * DEPRECATED: This webhook endpoint is deprecated.
  * Please use the new user-specific webhook endpoint: /api/webhook/[token]

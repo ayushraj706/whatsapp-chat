@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { downloadAndUploadToS3 } from '@/lib/aws-s3';
 
+export const runtime = 'nodejs';
+
 // TypeScript interfaces for webhook payload
 interface WhatsAppContact {
   wa_id: string;

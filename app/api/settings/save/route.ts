@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { randomBytes } from 'crypto';
 
+export const runtime = 'nodejs';
+
 /**
  * Generate a unique webhook token
  */

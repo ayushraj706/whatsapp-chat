@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { uploadFileToS3, isWhatsAppSupportedFileType } from '@/lib/aws-s3';
 
+export const runtime = 'nodejs';
+
 interface MediaUploadResult {
   id: string;
   url: string;
