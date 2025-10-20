@@ -60,6 +60,8 @@ export default function ChatPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
   const [checkingSetup, setCheckingSetup] = useState(true);
+  const [broadcastGroupId, setBroadcastGroupId] = useState<string | null>(null);
+  const [broadcastGroupName, setBroadcastGroupName] = useState<string | null>(null);
   const supabase = createClient();
 
   // Define handleBackToUsers early so it can be used in useEffect
@@ -439,9 +441,99 @@ export default function ChatPage() {
     };
   }, [selectedUser, user, supabase]);
 
+  // Fetch broadcast messages when broadcast group is selected
+  useEffect(() => {
+    if (!broadcastGroupId || !user) {
+      // Clear messages if no broadcast group is selected
+      if (!selectedUser) {
+        setMessages([]);
+      }
+      return;
+    }
+
+    const fetchBroadcastMessages = async () => {
+      console.log(`Fetching broadcast messages for group ${broadcastGroupId}`);
+      
+      try {
+        const response = await fetch(`/api/groups/${broadcastGroupId}/messages`);
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          console.log(`Fetched ${result.messages?.length || 0} broadcast messages`);
+          setMessages(result.messages || []);
+        } else {
+          console.error('Failed to fetch broadcast messages:', result.error);
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error('Error fetching broadcast messages:', error);
+        setMessages([]);
+      }
+    };
+
+    fetchBroadcastMessages();
+
+    // Set up real-time subscription for broadcast messages
+    const channelName = `broadcast-${broadcastGroupId}-${Date.now()}`;
+    const messagesSubscription = supabase
+      .channel(channelName)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages'
+      }, (payload) => {
+        console.log('New broadcast message received via real-time:', payload);
+        
+        const newMessage = payload.new as MessagePayload;
+        
+        // Check if this message belongs to the current broadcast group
+        try {
+          const mediaData = typeof newMessage.media_data === 'string'
+            ? JSON.parse(newMessage.media_data)
+            : newMessage.media_data;
+          
+          if (mediaData?.broadcast_group_id === broadcastGroupId) {
+            console.log('Adding broadcast message to window');
+            
+            const messageWithFlag = {
+              ...newMessage,
+              is_sent_by_me: true,
+              timestamp: newMessage.timestamp || new Date().toISOString()
+            };
+            
+            setMessages((prev) => {
+              // Avoid duplicates
+              const exists = prev.find(m => m.id === messageWithFlag.id);
+              if (exists) return prev;
+              
+              // Add message and sort by timestamp
+              return [...prev, messageWithFlag].sort((a, b) => 
+                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+              );
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing broadcast message:', error);
+        }
+      })
+      .subscribe();
+
+    console.log(`Subscribed to broadcast messages channel: ${channelName}`);
+
+    return () => {
+      console.log(`Unsubscribing from broadcast messages channel: ${channelName}`);
+      messagesSubscription.unsubscribe();
+    };
+  }, [broadcastGroupId, user, supabase, selectedUser]);
+
   // Handle user selection and mark messages as read
   const handleUserSelect = async (selectedUser: ChatUser) => {
     console.log('User selected:', selectedUser);
+    
+    // Clear broadcast group state when selecting an individual user
+    setBroadcastGroupId(null);
+    setBroadcastGroupName(null);
+    
     setSelectedUser(selectedUser);
     
     // Immediately clear unread count in UI for better UX
@@ -559,7 +651,133 @@ export default function ChatPage() {
     }
   }, [refreshUsers]);
 
+  const handleBroadcastToGroup = useCallback((groupId: string, groupName: string) => {
+    console.log('Broadcasting to group:', groupName);
+    
+    // Clear individual user state
+    setSelectedUser(null);
+    setMessages([]);
+    
+    // Set broadcast group state
+    setBroadcastGroupId(groupId);
+    setBroadcastGroupName(groupName);
+    
+    // Show chat window on mobile
+    setShowChat(true);
+  }, []);
+
+  const handleSendBroadcast = async (content: string) => {
+    if (!broadcastGroupId || !user || sendingMessage) return;
+
+    setSendingMessage(true);
+    
+    // Generate optimistic message ID
+    const optimisticId = `optimistic_broadcast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+    
+    // Check if content is a template (JSON format)
+    let requestBody;
+    let messageContent = content;
+    let messageType = 'text';
+    let isTemplate = false;
+    
+    try {
+      const parsedContent = JSON.parse(content);
+      if (parsedContent.type === 'template') {
+        // Template broadcast
+        isTemplate = true;
+        messageContent = parsedContent.displayMessage;
+        messageType = 'template';
+        requestBody = {
+          message: parsedContent.displayMessage,
+          messageType: 'template',
+          templateName: parsedContent.templateName,
+          templateData: parsedContent.templateData,
+          variables: parsedContent.variables,
+        };
+      } else {
+        requestBody = {
+          message: content,
+          messageType: 'text',
+        };
+      }
+    } catch {
+      // Not JSON, treat as regular text message
+      requestBody = {
+        message: content,
+        messageType: 'text',
+      };
+    }
+    
+    // Create optimistic message for instant UI feedback
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      sender_id: user.id,
+      receiver_id: user.id,
+      content: messageContent,
+      timestamp,
+      is_sent_by_me: true,
+      message_type: messageType,
+      media_data: isTemplate ? content : JSON.stringify({ broadcast_group_id: broadcastGroupId })
+    };
+    
+    // Add optimistic message to UI immediately
+    setMessages((prev) => [...prev, optimisticMessage]);
+    
+    try {
+      console.log(`Broadcasting message to group ${broadcastGroupId}`);
+      
+      const response = await fetch(`/api/groups/${broadcastGroupId}/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send broadcast');
+      }
+
+      console.log('Broadcast sent successfully:', result);
+      
+      // Remove optimistic message and refresh to get real messages
+      setMessages((prev) => prev.filter(m => m.id !== optimisticId));
+      
+      // Refresh broadcast messages to show the real ones
+      const messagesResponse = await fetch(`/api/groups/${broadcastGroupId}/messages`);
+      const messagesResult = await messagesResponse.json();
+      if (messagesResponse.ok && messagesResult.success) {
+        setMessages(messagesResult.messages || []);
+      }
+      
+      // Show success message
+      alert(`Broadcast sent to ${result.results.success}/${result.results.total} members`);
+      
+      // Refresh users list to show the broadcast messages
+      await refreshUsers();
+      
+    } catch (error) {
+      console.error('Error sending broadcast:', error);
+      
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter(m => m.id !== optimisticId));
+      
+      alert(`Failed to send broadcast: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
+    // Check if we're broadcasting to a group or sending to a single user
+    if (broadcastGroupId && broadcastGroupName) {
+      await handleSendBroadcast(content);
+      return;
+    }
+    
     if (!selectedUser || !user || sendingMessage) return;
 
     setSendingMessage(true);
@@ -707,6 +925,7 @@ export default function ChatPage() {
               onUserSelect={handleUserSelect}
               currentUserId={user.id}
               onUsersUpdate={refreshUsers}
+              onBroadcastToGroup={handleBroadcastToGroup}
             />
           </div>
           
@@ -721,7 +940,10 @@ export default function ChatPage() {
               onClose={() => {
                 setSelectedUser(null);
                 setMessages([]);
+                setBroadcastGroupId(null);
+                setBroadcastGroupName(null);
               }}
+              broadcastGroupName={broadcastGroupName}
             />
           </div>
         </>
@@ -739,6 +961,7 @@ export default function ChatPage() {
                 onUserSelect={handleUserSelect}
                 currentUserId={user.id}
                 onUsersUpdate={refreshUsers}
+                onBroadcastToGroup={handleBroadcastToGroup}
               />
       </div>
           ) : (
@@ -748,10 +971,15 @@ export default function ChatPage() {
                 selectedUser={selectedUser}
                 messages={messages}
                 onSendMessage={handleSendMessage}
-                onBack={handleBackToUsers}
+                onBack={() => {
+                  handleBackToUsers();
+                  setBroadcastGroupId(null);
+                  setBroadcastGroupName(null);
+                }}
                 isMobile={true}
                 isLoading={sendingMessage}
                 onUpdateName={handleUpdateName}
+                broadcastGroupName={broadcastGroupName}
               />
       </div>
           )}

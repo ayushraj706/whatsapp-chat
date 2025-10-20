@@ -3,7 +3,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, MessageCircle, Loader2, X, Download, FileText, Image as ImageIcon, Play, Pause, RefreshCw, Volume2, Paperclip, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, MessageCircle, Loader2, X, Download, FileText, Image as ImageIcon, Play, Pause, RefreshCw, Volume2, Paperclip, MessageSquare, Users } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { MediaUpload } from "./media-upload";
@@ -103,6 +103,7 @@ interface ChatWindowProps {
   isMobile?: boolean;
   isLoading?: boolean;
   onUpdateName?: (userId: string, customName: string) => Promise<void>;
+  broadcastGroupName?: string | null;
 }
 
 export function ChatWindow({ 
@@ -113,7 +114,8 @@ export function ChatWindow({
   onClose,
   isMobile = false,
   isLoading = false,
-  onUpdateName
+  onUpdateName,
+  broadcastGroupName
 }: ChatWindowProps) {
   const [messageInput, setMessageInput] = useState("");
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -137,6 +139,21 @@ export function ChatWindow({
     body: Record<string, string>;
     footer: Record<string, string>;
   }) => {
+    // Handle broadcast mode
+    if (broadcastGroupName) {
+      // Call onSendMessage with template data - it will be routed to broadcast endpoint
+      const templateMessage = `Template: ${templateName}`;
+      // Store template data in a special format that the broadcast handler can use
+      onSendMessage(JSON.stringify({
+        type: 'template',
+        templateName,
+        templateData,
+        variables,
+        displayMessage: templateMessage
+      }));
+      return;
+    }
+    
     if (!selectedUser) return;
 
     try {
@@ -245,15 +262,25 @@ export function ChatWindow({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (messageInput.trim() && selectedUser && !isLoading) {
+    // Allow sending if either individual user or broadcast group is selected
+    if (messageInput.trim() && (selectedUser || broadcastGroupName) && !isLoading) {
       onSendMessage(messageInput.trim());
       setMessageInput("");
     }
   };
 
   const handleSendMedia = async (mediaFiles: MediaFile[]) => {
-    if (!selectedUser || sendingMedia) return;
+    // Don't allow media upload in broadcast mode for now
+    if ((!selectedUser && !broadcastGroupName) || sendingMedia) return;
+    
+    if (broadcastGroupName) {
+      alert('Media upload to broadcast groups is not yet supported. Please send text messages only.');
+      return;
+    }
 
+    // TypeScript safety check
+    if (!selectedUser) return;
+    
     setSendingMedia(true);
     
     try {
@@ -955,7 +982,8 @@ export function ChatWindow({
     return groups;
   }, {});
 
-  if (!selectedUser) {
+  // Show welcome screen only if neither individual user nor broadcast group is selected
+  if (!selectedUser && !broadcastGroupName) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-muted/20">
         <MessageCircle className="h-24 w-24 text-muted-foreground/50 mb-6" />
@@ -990,28 +1018,60 @@ export function ChatWindow({
             <ArrowLeft className="h-5 w-5" />
           </button>
         )}
-        <Avatar className="h-10 w-10">
-          <AvatarFallback className="bg-green-100 text-green-700 font-semibold">
-            {selectedUser.name.substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div 
-          className="flex-1 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
-          onClick={() => setShowUserInfo(true)}
-          title="View contact info"
-        >
-          <h2 className="font-semibold text-foreground">{getDisplayName(selectedUser)}</h2>
-          <p className="text-sm text-muted-foreground">
-            {isLoading || sendingMedia ? (
-              <span className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {sendingMedia ? 'Sending media...' : 'Sending message...'}
-              </span>
-            ) : (
-              `Last seen ${formatTime(selectedUser.last_active)}`
-            )}
-          </p>
-        </div>
+        {broadcastGroupName ? (
+          <>
+            {/* Broadcast Group Header */}
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-green-600 text-white font-semibold">
+                <Users className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h2 className="font-semibold text-foreground flex items-center gap-2">
+                {broadcastGroupName}
+                <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                  Broadcast
+                </span>
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {isLoading ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Sending broadcast...
+                  </span>
+                ) : (
+                  'Send message to all group members'
+                )}
+              </p>
+            </div>
+          </>
+        ) : selectedUser ? (
+          <>
+            {/* Individual Chat Header */}
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-green-100 text-green-700 font-semibold">
+                {selectedUser.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div 
+              className="flex-1 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+              onClick={() => setShowUserInfo(true)}
+              title="View contact info"
+            >
+              <h2 className="font-semibold text-foreground">{getDisplayName(selectedUser)}</h2>
+              <p className="text-sm text-muted-foreground">
+                {isLoading || sendingMedia ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {sendingMedia ? 'Sending media...' : 'Sending message...'}
+                  </span>
+                ) : (
+                  `Last seen ${formatTime(selectedUser.last_active)}`
+                )}
+              </p>
+            </div>
+          </>
+        ) : null}
         {!isMobile && onClose && (
           <button 
             onClick={onClose}
@@ -1029,12 +1089,26 @@ export function ChatWindow({
         className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-green-50/30 to-blue-50/30 dark:from-green-950/10 dark:to-blue-950/10"
       >
         {Object.keys(groupedMessages).length === 0 ? (
+          // No messages - show appropriate placeholder
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <MessageCircle className="h-16 w-16 mb-4 opacity-50" />
-            <p className="text-lg font-medium mb-2">No messages yet</p>
-            <p className="text-sm text-center">
-              Start the conversation by sending a message below
-            </p>
+            {broadcastGroupName ? (
+              <>
+                <Users className="h-16 w-16 mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">Broadcast to {broadcastGroupName}</p>
+                <p className="text-sm text-center max-w-md">
+                  Messages sent here will be delivered to all members in this group individually.
+                  Each member will receive the message as a personal message from you.
+                </p>
+              </>
+            ) : (
+              <>
+                <MessageCircle className="h-16 w-16 mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">No messages yet</p>
+                <p className="text-sm text-center">
+                  Start the conversation by sending a message below
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -1104,16 +1178,20 @@ export function ChatWindow({
       {/* Message Input */}
       <div className="p-4 border-t border-border bg-background">
         <form onSubmit={handleSendMessage} className="flex gap-3 items-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMediaUpload(true)}
-            className="p-2 hover:bg-muted rounded-full transition-colors"
-            title="Attach media"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
+          {/* Hide media button in broadcast mode, show template button */}
+          {!broadcastGroupName && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMediaUpload(true)}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+              title="Attach media"
+            >
+              <Paperclip className="h-5 w-5" />
+            </Button>
+          )}
+          {/* Template button available for both modes */}
           <Button
             type="button"
             variant="ghost"
@@ -1127,7 +1205,13 @@ export function ChatWindow({
           <Input
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
-            placeholder={isLoading || sendingMedia ? "Sending..." : "Type a message..."}
+            placeholder={
+              isLoading || sendingMedia 
+                ? "Sending..." 
+                : broadcastGroupName 
+                  ? "Type broadcast message..." 
+                  : "Type a message..."
+            }
             className="flex-1 border-border focus:ring-green-500 rounded-full px-4 py-2"
             maxLength={1000}
             disabled={isLoading || sendingMedia}
@@ -1162,29 +1246,39 @@ export function ChatWindow({
         </div>
       )}
 
-      {/* Media Upload Modal */}
-      <MediaUpload
-        isOpen={showMediaUpload}
-        onClose={() => setShowMediaUpload(false)}
-        onSend={handleSendMedia}
-        selectedUser={selectedUser}
-      />
+      {/* Media Upload Modal - Only in individual chat mode */}
+      {selectedUser && (
+        <MediaUpload
+          isOpen={showMediaUpload}
+          onClose={() => setShowMediaUpload(false)}
+          onSend={handleSendMedia}
+          selectedUser={selectedUser}
+        />
+      )}
 
-      {/* Template Selector Modal */}
-      <TemplateSelector
-        isOpen={showTemplateSelector}
-        onClose={() => setShowTemplateSelector(false)}
-        onSendTemplate={handleSendTemplate}
-        selectedUser={selectedUser!}
-      />
+      {/* Template Selector Modal - Works in both individual and broadcast mode */}
+      {(selectedUser || broadcastGroupName) && (
+        <TemplateSelector
+          isOpen={showTemplateSelector}
+          onClose={() => setShowTemplateSelector(false)}
+          onSendTemplate={handleSendTemplate}
+          selectedUser={selectedUser || { 
+            id: 'broadcast', 
+            name: broadcastGroupName || 'Broadcast Group',
+            last_active: new Date().toISOString()
+          }}
+        />
+      )}
 
-      {/* User Info Dialog */}
-      <UserInfoDialog
-        isOpen={showUserInfo}
-        onClose={() => setShowUserInfo(false)}
-        user={selectedUser}
-        onUpdateName={handleUpdateName}
-      />
+      {/* User Info Dialog - Only in individual chat mode */}
+      {selectedUser && (
+        <UserInfoDialog
+          isOpen={showUserInfo}
+          onClose={() => setShowUserInfo(false)}
+          user={selectedUser}
+          onUpdateName={handleUpdateName}
+        />
+      )}
     </div>
   );
 } 

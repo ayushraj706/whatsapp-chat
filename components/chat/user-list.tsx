@@ -4,11 +4,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { Search, MessageCircle, LogOut, Plus, Edit3, Check, X, Phone, FileText, Settings } from "lucide-react";
-import { useState } from "react";
+import { Search, MessageCircle, LogOut, Plus, Edit3, Check, X, Phone, FileText, Settings, Users } from "lucide-react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { GroupsList } from "./groups-list";
+import { GroupManagementDialog } from "./group-management-dialog";
 
 interface ChatUser {
   id: string;
@@ -23,15 +25,24 @@ interface ChatUser {
   unread_count?: number;
 }
 
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  member_count: number;
+  unread_count?: number;
+}
+
 interface UserListProps {
   users: ChatUser[];
   selectedUser: ChatUser | null;
   onUserSelect: (user: ChatUser) => void;
   currentUserId: string;
   onUsersUpdate?: () => void;
+  onBroadcastToGroup?: (groupId: string, groupName: string) => void;
 }
 
-export function UserList({ users, selectedUser, onUserSelect, currentUserId, onUsersUpdate }: UserListProps) {
+export function UserList({ users, selectedUser, onUserSelect, currentUserId, onUsersUpdate, onBroadcastToGroup }: UserListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState("");
@@ -40,8 +51,33 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
   const [editingName, setEditingName] = useState("");
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  
+  // Groups state
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [groupFilter, setGroupFilter] = useState<string | null>(null);
+  
   const supabase = createClient();
   const router = useRouter();
+
+  // Load groups on component mount
+  useEffect(() => {
+    loadGroups();
+  }, []);
+
+  const loadGroups = async () => {
+    try {
+      const response = await fetch('/api/groups');
+      const data = await response.json();
+      
+      if (data.success && data.groups) {
+        setGroups(data.groups);
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    }
+  };
 
   // Helper functions defined first to avoid hoisting issues
   const getDisplayName = (user: ChatUser) => {
@@ -225,6 +261,57 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
     setEditingName("");
   };
 
+  // Group handlers
+  const handleCreateGroup = () => {
+    setEditingGroup(null);
+    setShowGroupDialog(true);
+  };
+
+  const handleEditGroup = (group: Group) => {
+    setEditingGroup(group);
+    setShowGroupDialog(true);
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        loadGroups();
+        if (onUsersUpdate) {
+          onUsersUpdate();
+        }
+      } else {
+        console.error('Failed to delete group');
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+    }
+  };
+
+  const handleGroupSaved = () => {
+    loadGroups();
+    if (onUsersUpdate) {
+      onUsersUpdate();
+    }
+  };
+
+  const handleBroadcastToGroup = (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group && onBroadcastToGroup) {
+      onBroadcastToGroup(groupId, group.name);
+    }
+  };
+
+  const handleSelectMemberFromGroup = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      onUserSelect(user);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
@@ -243,6 +330,15 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
               title="New chat"
             >
               <Plus className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCreateGroup}
+              className="p-2 text-white hover:bg-green-700 rounded-full transition-colors"
+              title="Create broadcast group"
+            >
+              <Users className="h-5 w-5" />
             </Button>
             <Link href="/protected/templates">
               <Button
@@ -342,6 +438,19 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
           />
         </div>
       </div>
+
+      {/* Groups List */}
+      {groups.length > 0 && (
+        <div className="border-b border-border">
+          <GroupsList
+            groups={groups}
+            onEditGroup={handleEditGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onSelectMember={handleSelectMemberFromGroup}
+            onBroadcastToGroup={handleBroadcastToGroup}
+          />
+        </div>
+      )}
 
       {/* User List */}
       <div className="flex-1 overflow-y-auto">
@@ -476,6 +585,18 @@ export function UserList({ users, selectedUser, onUserSelect, currentUserId, onU
           ))
         )}
       </div>
+
+      {/* Group Management Dialog */}
+      <GroupManagementDialog
+        isOpen={showGroupDialog}
+        onClose={() => {
+          setShowGroupDialog(false);
+          setEditingGroup(null);
+        }}
+        users={users}
+        group={editingGroup}
+        onGroupSaved={handleGroupSaved}
+      />
     </div>
   );
 }
