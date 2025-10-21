@@ -241,17 +241,41 @@ export async function POST(request: NextRequest) {
     // Extract the phone number ID that received the message (WhatsApp Business Account)
     const phoneNumberId = value?.metadata?.phone_number_id;
     
-    console.log('Incoming message for phone_number_id:', phoneNumberId);
+    // Convert to string to ensure type consistency with database
+    const phoneNumberIdStr = phoneNumberId ? String(phoneNumberId) : null;
+    
+    console.log('Incoming message for phone_number_id:', phoneNumberIdStr, '(type:', typeof phoneNumberId, ')');
+    
+    if (!phoneNumberIdStr) {
+      console.error('No phone_number_id in webhook payload');
+      return new NextResponse('OK', { status: 200 });
+    }
     
     // Find the user who owns this phone number ID
     const { data: userSettings, error: settingsError } = await supabase
       .from('user_settings')
-      .select('id, access_token, api_version')
-      .eq('phone_number_id', phoneNumberId)
+      .select('id, access_token, api_version, phone_number_id')
+      .eq('phone_number_id', phoneNumberIdStr)
       .single();
     
     if (settingsError || !userSettings) {
-      console.error('No user found for phone_number_id:', phoneNumberId);
+      console.error('No user found for phone_number_id:', phoneNumberIdStr);
+      console.error('Database error:', settingsError);
+      
+      // Debug: Let's check what phone_number_ids exist in the database
+      const { data: allSettings, error: debugError } = await supabase
+        .from('user_settings')
+        .select('id, phone_number_id')
+        .not('phone_number_id', 'is', null);
+      
+      if (!debugError && allSettings) {
+        console.log('Available phone_number_ids in database:', allSettings.map(s => ({
+          id: s.id,
+          phone_number_id: s.phone_number_id,
+          type: typeof s.phone_number_id
+        })));
+      }
+      
       // Still acknowledge the webhook to avoid retries
       return new NextResponse('OK', { status: 200 });
     }
