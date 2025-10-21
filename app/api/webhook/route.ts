@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { downloadAndUploadToS3 } from '@/lib/aws-s3';
 
 export const runtime = 'nodejs';
@@ -71,7 +71,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if the token matches any user's verify token
-    const supabase = await createClient();
+    // Use service role client to bypass RLS
+    const supabase = createServiceRoleClient();
     const { data: settings, error } = await supabase
       .from('user_settings')
       .select('id, verify_token')
@@ -226,7 +227,8 @@ export async function POST(request: NextRequest) {
   try {
     console.warn('DEPRECATED: Using legacy webhook endpoint. Please migrate to /api/webhook/[token]');
     
-    const supabase = await createClient();
+    // Use service role client to bypass RLS since webhook requests have no auth
+    const supabase = createServiceRoleClient();
     const body = await request.json();
 
     console.log('Received webhook payload (legacy):', JSON.stringify(body, null, 2));
