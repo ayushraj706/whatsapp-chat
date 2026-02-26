@@ -1,75 +1,32 @@
 'use client';
-
-import React from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, Paperclip, MessageSquare } from "lucide-react";
 
-export function ChatInput({
-  messageInput,
-  setMessageInput,
-  handleSendMessage,
-  isLoading,
-  sendingMedia,
-  broadcastGroupName,
-  setShowMediaUpload,
-  setShowTemplateSelector
-}: any) {
+export function ChatInput({ onSendMessage, isLoading, setShowMediaUpload, setShowTemplateSelector, broadcastGroupName }: any) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim() && !isLoading) {
+      onSendMessage(input.trim());
+      setInput("");
+    }
+  };
+
   return (
-    <div className="p-4 border-t border-[#30363d] bg-[#161b22]">
-      <form onSubmit={handleSendMessage} className="flex gap-3 items-end">
-        
-        {/* Hide media button in broadcast mode, show template button */}
-        {!broadcastGroupName && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMediaUpload(true)}
-            className="p-2 hover:bg-[#30363d] text-gray-400 rounded-full transition-colors"
-            title="Attach media"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
-        )}
-        
-        {/* Template button available for both modes */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowTemplateSelector(true)}
-          className="p-2 hover:bg-[#30363d] text-gray-400 rounded-full transition-colors"
-          title="Send template"
-        >
-          <MessageSquare className="h-5 w-5" />
-        </Button>
-
-        <Input
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          placeholder={
-            isLoading || sendingMedia 
-              ? "Sending..." 
-              : broadcastGroupName 
-                ? "Type broadcast message..." 
-                : "Type a message..."
-          }
-          className="flex-1 bg-[#0d1117] border-[#30363d] text-white focus:border-[#2ea44f] focus:ring-[#2ea44f] rounded-full px-4 py-2"
-          maxLength={1000}
-          disabled={isLoading || sendingMedia}
-        />
-
-        <Button 
-          type="submit" 
-          disabled={!messageInput.trim() || isLoading || sendingMedia}
-          className="bg-[#2ea44f] hover:bg-[#2c974b] text-white px-6 py-2 rounded-full disabled:opacity-50 transition-all"
-        >
-          {isLoading || sendingMedia ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
+    <div className="p-3 bg-[#202c33] flex items-center gap-2">
+      <Button type="button" variant="ghost" size="icon" onClick={() => setShowMediaUpload(true)} className="text-[#8696a0] hover:text-[#e9edef]">
+        <Paperclip size={20} />
+      </Button>
+      <Button type="button" variant="ghost" size="icon" onClick={() => setShowTemplateSelector(true)} className="text-[#8696a0] hover:text-[#e9edef]">
+        <MessageSquare size={20} />
+      </Button>
+      <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
+        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="bg-[#2a3942] border-none text-[#e9edef] focus-visible:ring-0 rounded-lg" />
+        <Button type="submit" disabled={!input.trim() || isLoading} className="bg-[#00a884] hover:bg-[#008f6f] rounded-full p-2 h-10 w-10">
+          {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
         </Button>
       </form>
     </div>
