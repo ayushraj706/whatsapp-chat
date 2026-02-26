@@ -1,9 +1,9 @@
-'use client'; [span_3](start_span)// Client-side rendering ke liye zaroori[span_3](end_span)
+'use client'; [span_0](start_span)// Client-side rendering ke liye zaroori[span_0](end_span)
 
 import React, { useState } from 'react';
-import { Check, CheckCheck, Send, ArrowLeft, X, MessageCircle } from 'lucide-react';
+[span_1](start_span)import { Check, CheckCheck, Send, ArrowLeft, X, MessageCircle } from 'lucide-react';[span_1](end_span)
 
-[span_4](start_span)// Original Named Export maintain karna zaroori hai[span_4](end_span)
+[span_2](start_span)// Original Props maintain karna zaroori hai[span_2](end_span)
 export function ChatWindow({ 
   selectedUser, 
   messages = [], 
@@ -12,9 +12,8 @@ export function ChatWindow({
   onClose,
   isMobile = false 
 }: any) {
-  const [input, setInput] = useState("");
+  [span_3](start_span)[span_4](start_span)const [input, setInput] = useState("");[span_3](end_span)[span_4](end_span)
 
-  [span_5](start_span)// 1. Welcome Screen Logic (Agar koi user select na ho)[span_5](end_span)
   if (!selectedUser) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-[#0d1117] text-gray-400">
@@ -28,14 +27,14 @@ export function ChatWindow({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && onSendMessage) {
-      onSendMessage(input.trim()); [span_6](start_span)// Parent function call[span_6](end_span)
+      onSendMessage(input.trim()); [span_5](start_span)// Parent logic call[span_5](end_span)
       setInput("");
     }
   };
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] border-l border-[#30363d] w-full">
-      {/* 2. Header (GitHub Style) */}
+      {/* Header - GitHub Style */}
       <div className="p-4 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between">
         <div className="flex items-center gap-3">
           {isMobile && (
@@ -45,7 +44,7 @@ export function ChatWindow({
           )}
           <div>
             <h3 className="text-white font-medium text-sm">
-              [span_7](start_span){selectedUser.custom_name || selectedUser.whatsapp_name || selectedUser.name}[span_7](end_span)
+              [span_6](start_span)[span_7](start_span){selectedUser.custom_name || selectedUser.whatsapp_name || selectedUser.name}[span_6](end_span)[span_7](end_span)
             </h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
@@ -58,26 +57,27 @@ export function ChatWindow({
         </button>
       </div>
 
-      [span_8](start_span)[span_9](start_span){/* 3. Messages Area[span_8](end_span)[span_9](end_span) */}
+      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         {messages.length === 0 ? (
           <div className="text-center text-gray-600 text-xs mt-20 italic">
-            Start the conversation with {selectedUser.name}
+            No messages yet.
           </div>
         ) : (
           messages.map((msg: any, index: number) => {
-            [span_10](start_span)const isMe = msg.is_sent_by_me; // Original field name[span_10](end_span)
+            [span_8](start_span)// Logic ko function body ke andar rakha hai[span_8](end_span)
+            const isMe = msg.is_sent_by_me; 
             return (
-              <div key={index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id || index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] p-3 rounded-xl text-sm ${
                   isMe ? 'bg-[#2ea44f] text-white rounded-tr-none' : 'bg-[#21262d] text-gray-200 rounded-tl-none border border-[#30363d]'
                 }`}>
                   <p className="leading-relaxed">{msg.content || msg.text}</p>
                   <div className="flex items-center justify-end gap-1 mt-1 opacity-60 text-[10px]">
-                    [span_11](start_span){new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}[span_11](end_span)
+                    [span_9](start_span){msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}[span_9](end_span)
                     {isMe && (
                       <span>
-                        [span_12](start_span){msg.status === 'read' ? <CheckCheck size={12} className="text-blue-400" /> : <CheckCheck size={12} />}[span_12](end_span)
+                        {msg.status === 'read' ? <CheckCheck size={12} className="text-blue-400" /> : <CheckCheck size={12} />}
                       </span>
                     )}
                   </div>
@@ -88,16 +88,16 @@ export function ChatWindow({
         )}
       </div>
 
-      [span_13](start_span)[span_14](start_span){/* 4. Input Area[span_13](end_span)[span_14](end_span) */}
+      {/* Input Area */}
       <form onSubmit={handleSubmit} className="p-4 bg-[#161b22] border-t border-[#30363d] flex items-center gap-2">
         <input 
           type="text" 
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          [span_10](start_span)onChange={(e) => setInput(e.target.value)}[span_10](end_span)
           placeholder="Type a message..."
-          className="flex-1 bg-[#0d1117] border border-[#30363d] rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-[#2ea44f] transition-all"
+          className="flex-1 bg-[#0d1117] border border-[#30363d] rounded-md px-4 py-2 text-white text-sm focus:outline-none focus:border-[#2ea44f]"
         />
-        <button type="submit" disabled={!input.trim()} className="bg-[#2ea44f] text-white p-2 rounded-md hover:bg-[#2c974b] disabled:opacity-50 transition-all">
+        <button type="submit" disabled={!input.trim()} className="bg-[#2ea44f] text-white p-2 rounded-md hover:bg-[#2c974b] disabled:opacity-50">
           <Send size={18} />
         </button>
       </form>
