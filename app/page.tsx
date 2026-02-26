@@ -1,8 +1,7 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
+'use client';
+
+import { createClient } from "@/utils/supabase/client";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { GitHubStarButton } from "@/components/github-star-button";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { 
   MessageCircle, 
@@ -36,6 +35,17 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
+  const supabase = createClient();
+
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
     <main className="min-h-screen flex flex-col">
       {/* Navigation */}
@@ -43,18 +53,17 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex justify-between items-center p-4 px-6">
           <div className="flex items-center gap-2 font-bold text-xl">
             <MessageCircle className="h-8 w-8 text-green-600" />
-            <span>WaChat</span>
+            <span>BaseKey</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-medium hover:text-green-600 transition-colors">Features</a>
             <a href="#tech-stack" className="text-sm font-medium hover:text-green-600 transition-colors">Tech Stack</a>
-            <a href="#self-hosting" className="text-sm font-medium hover:text-green-600 transition-colors">Self-Hosting</a>
-            <a href="https://github.com/hetref/whatsapp-chat" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-green-600 transition-colors">Documentation</a>
+            <a href="#self-hosting" className="text-sm font-medium hover:text-green-600 transition-colors">Developer Info</a>
+            <a href="https://ayus.fun" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-green-600 transition-colors">Success Point Hub</a>
           </div>
           <div className="flex items-center gap-3">
             <ThemeSwitcher />
-            <GitHubStarButton />
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+            {/* Removed Sign In/Sign Up and GitHub buttons from here */}
           </div>
         </div>
       </nav>
@@ -66,34 +75,34 @@ export default function Home() {
           <div className="text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
               <Rocket className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">Production-Ready WhatsApp Business Platform</span>
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">Bihar's Best WhatsApp Business Platform</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-              Enterprise WhatsApp
-              <span className="block text-green-600">Business Integration</span>
+              BaseKey WhatsApp
+              <span className="block text-green-600">Marketing Integration</span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-              A fully functional, production-ready WhatsApp Business platform built with Next.js 15, Supabase, and WhatsApp Cloud API. Real-time messaging, broadcast groups, template management, and more.
+              A fully functional, production-ready WhatsApp Business platform built by Ayush Raj. Real-time messaging, broadcast groups, and template management for Samastipur and beyond.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                href="/auth/login"
+              <button 
+                onClick={handleGoogleLogin}
                 className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-colors shadow-lg shadow-green-600/30"
               >
                 Get Started
                 <ArrowRight className="h-5 w-5" />
-              </Link>
+              </button>
               <Link 
-                href="https://github.com/hetref/whatsapp-chat"
+                href="https://ayus.fun"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 px-8 py-4 rounded-full font-semibold text-lg transition-colors"
               >
-                <Github className="h-5 w-5" />
-                View on GitHub
+                <Globe className="h-5 w-5" />
+                Visit Success Point Hub
               </Link>
             </div>
 
@@ -147,9 +156,9 @@ export default function Home() {
       <section className="py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <Badge className="mb-4">About WaChat</Badge>
+            <Badge className="mb-4">About BaseKey</Badge>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Why Choose WaChat?
+              Why Choose BaseKey?
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               An enterprise-grade WhatsApp Business integration platform that enables businesses to manage customer conversations through a modern, intuitive web interface.
@@ -374,427 +383,4 @@ export default function Home() {
                 Frontend
               </h3>
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">Next.js 15</div>
-                    <div className="text-sm text-muted-foreground">App Router, Server Components, API Routes</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">React 19</div>
-                    <div className="text-sm text-muted-foreground">Modern hooks, Suspense, Server Actions</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">TypeScript 5</div>
-                    <div className="text-sm text-muted-foreground">Type safety, better DX, fewer bugs</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">Tailwind CSS</div>
-                    <div className="text-sm text-muted-foreground">Utility-first styling, responsive design</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">Shadcn/ui</div>
-                    <div className="text-sm text-muted-foreground">Beautiful, accessible components</div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-8">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Server className="h-6 w-6 text-blue-600" />
-                Backend
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">Supabase</div>
-                    <div className="text-sm text-muted-foreground">PostgreSQL database, Auth, Real-time</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">WhatsApp Cloud API</div>
-                    <div className="text-sm text-muted-foreground">Meta&apos;s official WhatsApp Business API</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">AWS S3</div>
-                    <div className="text-sm text-muted-foreground">Scalable media storage with pre-signed URLs</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">PostgreSQL Functions</div>
-                    <div className="text-sm text-muted-foreground">Database-level business logic</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <div className="font-semibold">Row Level Security</div>
-                    <div className="text-sm text-muted-foreground">Database-level access control</div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="p-6 text-center">
-              <Radio className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Real-time</h3>
-              <p className="text-sm text-muted-foreground">WebSocket connections for instant updates</p>
-            </Card>
-            <Card className="p-6 text-center">
-              <Lock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Secure</h3>
-              <p className="text-sm text-muted-foreground">Authentication, encryption, RLS policies</p>
-            </Card>
-            <Card className="p-6 text-center">
-              <Zap className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Optimized</h3>
-              <p className="text-sm text-muted-foreground">Strategic indexes, caching, code splitting</p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Self-Hosting Section */}
-      <section id="self-hosting" className="py-24 px-6 bg-muted/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <Badge className="mb-4">Self-Hosting Guide</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Deploy Your Own Instance
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Complete control over your data with easy self-hosting options
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12 mb-12">
-            <div>
-              <h3 className="text-2xl font-bold mb-6">Quick Setup</h3>
-              <div className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Clone Repository</h4>
-                    <code className="text-sm bg-muted px-3 py-1 rounded block">
-                      git clone https://github.com/hetref/whatsapp-chat
-                    </code>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Install Dependencies</h4>
-                    <code className="text-sm bg-muted px-3 py-1 rounded block">
-                      npm install
-                    </code>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Setup Environment</h4>
-                    <code className="text-sm bg-muted px-3 py-1 rounded block">
-                      cp .env.example .env.local
-                    </code>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">4</div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Run Development Server</h4>
-                    <code className="text-sm bg-muted px-3 py-1 rounded block">
-                      npm run dev
-                    </code>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-2xl font-bold mb-6">Prerequisites</h3>
-              <div className="space-y-3">
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Code2 className="h-5 w-5 text-green-600" />
-                    <div>
-                      <div className="font-semibold">Node.js 18+</div>
-                      <div className="text-sm text-muted-foreground">JavaScript runtime</div>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Database className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="font-semibold">Supabase Account</div>
-                      <div className="text-sm text-muted-foreground">PostgreSQL database & auth</div>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <MessageCircle className="h-5 w-5 text-green-600" />
-                    <div>
-                      <div className="font-semibold">Meta Business Account</div>
-                      <div className="text-sm text-muted-foreground">WhatsApp Business API access</div>
-                    </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Cloud className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <div className="font-semibold">AWS Account</div>
-                      <div className="text-sm text-muted-foreground">S3 storage for media files</div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </div>
-
-          <Card className="p-8 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
-            <div className="flex items-start gap-4">
-              <FileText className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="text-xl font-bold mb-2">Complete Documentation</h3>
-                <p className="text-muted-foreground mb-4">
-                  Detailed setup guide with database migrations, environment variables, WhatsApp API configuration, and deployment instructions available in the README.
-                </p>
-                <Link 
-                  href="https://github.com/hetref/whatsapp-chat#readme"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold"
-                >
-                  Read Full Documentation
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* Security & Performance Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <Badge className="mb-4">Security & Performance</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Enterprise-Grade Quality
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Shield className="h-8 w-8 text-green-600" />
-                <h3 className="text-2xl font-bold">Security Features</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Row Level Security (RLS) policies for data isolation</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Supabase Auth with secure session management</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Input validation and XSS prevention</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Encrypted storage with AWS S3</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">HTTPS-only with secure pre-signed URLs</span>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Zap className="h-8 w-8 text-yellow-600" />
-                <h3 className="text-2xl font-bold">Performance</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Strategic database indexes for fast queries</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Smart caching and lazy loading for media</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Optimistic UI updates for instant feedback</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Code splitting and dynamic imports</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">WebSocket connections for real-time sync</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 px-6 bg-gradient-to-br from-green-600 to-blue-600 text-white">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h2 className="text-4xl md:text-5xl font-bold">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-green-50">
-            Deploy your own WhatsApp Business platform in minutes. Star the project on GitHub and join the community!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
-              href="/auth/sign-up"
-              className="inline-flex items-center gap-2 bg-white text-green-600 hover:bg-green-50 px-8 py-4 rounded-full font-semibold text-lg transition-colors shadow-lg"
-            >
-              Start Building Now
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-            <Link 
-              href="https://github.com/hetref/whatsapp-chat"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border-2 border-white text-white hover:bg-white/10 px-8 py-4 rounded-full font-semibold text-lg transition-colors"
-            >
-              <Star className="h-5 w-5" />
-              Star on GitHub
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t bg-muted/50 py-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 font-bold text-xl mb-4">
-                <MessageCircle className="h-6 w-6 text-green-600" />
-                <span>WaChat</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Enterprise WhatsApp Business integration platform built with Next.js and Supabase.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Product</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-                <li><a href="#tech-stack" className="hover:text-foreground transition-colors">Tech Stack</a></li>
-                <li><a href="#self-hosting" className="hover:text-foreground transition-colors">Self-Hosting</a></li>
-                <li><a href="/auth/login" className="hover:text-foreground transition-colors">Get Started</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat#readme" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    Setup Guide
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat/issues" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    Support
-                  </a>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Community</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    GitHub
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat/issues" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    Issues
-                  </a>
-                </li>
-                <li>
-                  <a href="https://github.com/hetref/whatsapp-chat/discussions" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-                    Discussions
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <Separator className="my-8" />
-          
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>
-              © 2025 WaChat. Built with ❤️ using{" "}
-              <a href="https://nextjs.org" target="_blank" className="font-semibold hover:underline" rel="noreferrer">
-                Next.js
-              </a>
-              {" "}and{" "}
-              <a href="https://supabase.com" target="_blank" className="font-semibold hover:underline" rel="noreferrer">
-                Supabase
-              </a>
-            </p>
-            <p className="flex items-center gap-2">
-              <Github className="h-4 w-4" />
-              <a 
-                href="https://github.com/hetref/whatsapp-chat" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
-              >
-                Open Source on GitHub
-              </a>
-            </p>
-          </div>
-        </div>
-      </footer>
-    </main>
-  );
-}
+                <div class
