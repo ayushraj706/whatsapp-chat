@@ -384,3 +384,23 @@ export default function Home() {
               </h3>
               <div className="space-y-4">
                 <div class
+// ... (pichla code jahan tak sahi hai wahan se aage)
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Next.js 15</div>
+                    <div className="text-sm text-muted-foreground">App Router, Server Components</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+      {/* Footer Branding aur baaki code band karne ke liye */}
+      <footer className="border-t py-12 px-6 text-center">
+         <p>© 2026 BaseKey by Ayush Raj</p>
+      </footer>
+    </main>
+  );
+}
