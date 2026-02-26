@@ -38,5 +38,13 @@
     "tailwindcss": "^3.4.16",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@chatscope/chat-ui-kit-react": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }
