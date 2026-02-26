@@ -1,6 +1,6 @@
 'use client';
 
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import Link from "next/link";
 import { 
