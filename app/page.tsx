@@ -58,12 +58,12 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-medium hover:text-green-600 transition-colors">Features</a>
             <a href="#tech-stack" className="text-sm font-medium hover:text-green-600 transition-colors">Tech Stack</a>
-            <a href="#self-hosting" className="text-sm font-medium hover:text-green-600 transition-colors">Developer Info</a>
+            <a href="#developer" className="text-sm font-medium hover:text-green-600 transition-colors">Developer Info</a>
             <a href="https://ayus.fun" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-green-600 transition-colors">Success Point Hub</a>
           </div>
           <div className="flex items-center gap-3">
             <ThemeSwitcher />
-            {/* Removed Sign In/Sign Up and GitHub buttons from here */}
+            {/* Removed Sign In/Sign Up and GitHub buttons to keep it clean */}
           </div>
         </div>
       </nav>
@@ -84,7 +84,7 @@ export default function Home() {
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-              A fully functional, production-ready WhatsApp Business platform built by Ayush Raj. Real-time messaging, broadcast groups, and template management for Samastipur and beyond.
+              A fully functional, production-ready WhatsApp Business platform built by Ayush Raj. Real-time messaging, broadcast groups, and template management.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -383,23 +383,323 @@ export default function Home() {
                 Frontend
               </h3>
               <div className="space-y-4">
-                <div class
-// ... (pichla code jahan tak sahi hai wahan se aage)
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                   <div>
                     <div className="font-semibold">Next.js 15</div>
-                    <div className="text-sm text-muted-foreground">App Router, Server Components</div>
+                    <div className="text-sm text-muted-foreground">App Router, Server Components, API Routes</div>
                   </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">React 19</div>
+                    <div className="text-sm text-muted-foreground">Modern hooks, Suspense, Server Actions</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">TypeScript 5</div>
+                    <div className="text-sm text-muted-foreground">Type safety, better DX, fewer bugs</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Tailwind CSS</div>
+                    <div className="text-sm text-muted-foreground">Utility-first styling, responsive design</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Shadcn/ui</div>
+                    <div className="text-sm text-muted-foreground">Beautiful, accessible components</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-8">
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Server className="h-6 w-6 text-blue-600" />
+                Backend
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Supabase</div>
+                    <div className="text-sm text-muted-foreground">PostgreSQL database, Auth, Real-time</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">WhatsApp Cloud API</div>
+                    <div className="text-sm text-muted-foreground">Meta&apos;s official WhatsApp Business API</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Supabase Storage</div>
+                    <div className="text-sm text-muted-foreground">Scalable media storage for files</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">PostgreSQL Functions</div>
+                    <div className="text-sm text-muted-foreground">Database-level business logic</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-semibold">Row Level Security</div>
+                    <div className="text-sm text-muted-foreground">Database-level access control</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="p-6 text-center">
+              <Radio className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Real-time</h3>
+              <p className="text-sm text-muted-foreground">WebSocket connections for instant updates</p>
+            </Card>
+            <Card className="p-6 text-center">
+              <Lock className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Secure</h3>
+              <p className="text-sm text-muted-foreground">Authentication, encryption, RLS policies</p>
+            </Card>
+            <Card className="p-6 text-center">
+              <Zap className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Optimized</h3>
+              <p className="text-sm text-muted-foreground">Strategic indexes, caching, code splitting</p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Developer Info Section */}
+      <section id="developer" className="py-24 px-6 bg-muted/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">Developed By</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Ayush Raj
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Passionate developer. Building the future with BaseKey and SuperKey.
+            </p>
+          </div>
+
+          <Card className="p-8 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800 text-center max-w-3xl mx-auto">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Code2 className="h-12 w-12 text-green-600 mb-2" />
+              <h3 className="text-2xl font-bold mb-2">Connect with the Creator</h3>
+              <p className="text-muted-foreground mb-6">
+                Explore more projects, tutorials, and resources on my official website.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link 
+                  href="https://ayus.fun"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full font-semibold transition-colors"
+                >
+                  <Globe className="h-5 w-5" />
+                  Visit Success Point Hub
+                </Link>
+                <Link 
+                  href="https://github.com/ayushraj706"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 px-6 py-3 rounded-full font-semibold transition-colors"
+                >
+                  <Github className="h-5 w-5" />
+                  GitHub Profile
+                </Link>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* Security & Performance Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">Security & Performance</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Enterprise-Grade Quality
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <Shield className="h-8 w-8 text-green-600" />
+                <h3 className="text-2xl font-bold">Security Features</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Row Level Security (RLS) policies for data isolation</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Supabase Auth with secure session management</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Input validation and XSS prevention</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Encrypted storage with Supabase Storage</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">HTTPS-only with secure data transit</span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <Zap className="h-8 w-8 text-yellow-600" />
+                <h3 className="text-2xl font-bold">Performance</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Strategic database indexes for fast queries</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Smart caching and lazy loading for media</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Optimistic UI updates for instant feedback</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">Code splitting and dynamic imports</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-muted-foreground">WebSocket connections for real-time sync</span>
                 </div>
               </div>
             </Card>
           </div>
         </div>
       </section>
-      {/* Footer Branding aur baaki code band karne ke liye */}
-      <footer className="border-t py-12 px-6 text-center">
-         <p>© 2026 BaseKey by Ayush Raj</p>
+
+      {/* CTA Section */}
+      <section className="py-24 px-6 bg-gradient-to-br from-green-600 to-blue-600 text-white">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <h2 className="text-4xl md:text-5xl font-bold">
+            Ready to Accelerate Your Business?
+          </h2>
+          <p className="text-xl text-green-50">
+            Join BaseKey today and take your WhatsApp marketing to the next level.
+          </p>
+          <div className="flex justify-center items-center">
+            <button 
+              onClick={handleGoogleLogin}
+              className="inline-flex items-center gap-2 bg-white text-green-600 hover:bg-green-50 px-8 py-4 rounded-full font-semibold text-lg transition-colors shadow-lg"
+            >
+              Login securely with Google
+              <ArrowRight className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/50 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 font-bold text-xl mb-4">
+                <MessageCircle className="h-6 w-6 text-green-600" />
+                <span>BaseKey</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enterprise WhatsApp Business integration platform for modern businesses.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
+                <li><a href="#tech-stack" className="hover:text-foreground transition-colors">Tech Stack</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Ayush Raj</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="https://ayus.fun" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                    Success Point Hub
+                  </a>
+                </li>
+                <li>
+                  <a href="https://github.com/ayushraj706" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+                    GitHub Profile
+                  </a>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Contact</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="mailto:ayushrajayushhh@gmail.com" className="hover:text-foreground transition-colors">
+                    Email Support
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <Separator className="my-8" />
+          
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+            <p>
+              © 2026 BaseKey. Built with ❤️ by Ayush Raj using{" "}
+              <a href="https://nextjs.org" target="_blank" className="font-semibold hover:underline" rel="noreferrer">
+                Next.js
+              </a>
+              {" "}and{" "}
+              <a href="https://supabase.com" target="_blank" className="font-semibold hover:underline" rel="noreferrer">
+                Supabase
+              </a>
+            </p>
+            <p className="flex items-center gap-2">
+              <Github className="h-4 w-4" />
+              <a 
+                href="https://github.com/ayushraj706" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                Follow me on GitHub
+              </a>
+            </p>
+          </div>
+        </div>
       </footer>
     </main>
   );
