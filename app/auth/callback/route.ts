@@ -10,12 +10,8 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // Login ke baad user ko dashboard par bhej do
-      return NextResponse.redirect(`${origin}/protected`) 
+      return NextResponse.redirect(`${origin}/protected`) // Login ke baad kahan jana hai
     }
   }
-
-  // Error aaye toh home par wapas bhej do
-  return NextResponse.redirect(`${origin}`)
+  return NextResponse.redirect(`${origin}`) // Error ho toh home par wapas
 }
-
